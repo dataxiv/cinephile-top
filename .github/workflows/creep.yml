@@ -6,7 +6,7 @@ on:
   #     - main
   schedule:
     - cron: "0 2,8 * * *"
-    - cron: "0 4,10 * * *"
+    # - cron: "0 4,10 * * *"
     - cron: "0 6,12 * * *"
     - cron: "0 7,13 * * *"
   workflow_dispatch:
@@ -64,12 +64,12 @@ jobs:
           bash scripts/run-top.sh maoyan &&
           popd
 
-      - name: Run script imdb
-        if: github.event.schedule == '0 4,10 * * *'
-        run: |
-          pushd ${SRC_NAME} &&
-          bash scripts/run-top.sh imdb &&
-          popd
+      # - name: Run script imdb
+      #   if: github.event.schedule == '0 4,10 * * *'
+      #   run: |
+      #     pushd ${SRC_NAME} &&
+      #     bash scripts/run-top.sh imdb &&
+      #     popd
 
       - name: Run script tmdb
         if: github.event.schedule == '0 6,12 * * *'

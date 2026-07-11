@@ -1,0 +1,44 @@
+name: Update imdb data
+
+on:
+  # push:
+  #   branches:
+  #     - main
+  schedule:
+    - cron: "0 4 * * *"
+  workflow_dispatch:
+
+jobs:
+  update:
+    permissions:
+      contents: write
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: lts/*
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Fetch IMDb Top 250
+        run: npm run fetch:top250
+
+      - name: Git auto commit
+        uses: stefanzweifel/git-auto-commit-action@v7
+        with:
+          commit_user_name: "github-actions[bot]"
+          commit_user_email: "41898282+github-actions[bot]@users.noreply.github.com"
+          commit_author: "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>"
+          commit_message: Automated update
+          # commit_options: '--no-verify --signoff'
+          push_options: "--force"
+          file_pattern: "*.json"
