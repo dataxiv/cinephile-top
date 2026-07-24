@@ -73,7 +73,41 @@ async function fetchTop250() {
     const page = await context.newPage();
 
     // avoid 202 status
-    await page.goto(SOURCE_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    const response = await page.goto(SOURCE_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    const status = response?.status();
+    const pageState = await page.evaluate(() => {
+      const nextData = document.getElementById('__NEXT_DATA__');
+      return {
+        title: document.title,
+        bodyText: document.body?.innerText?.trim().slice(0, 500) || '',
+        hasNextData: !!nextData,
+      };
+    });
+
+    if (status && status >= 400) {
+      throw new Error(
+        `IMDb returned HTTP ${status} for ${SOURCE_URL}. The page cannot be parsed as Top 250 data.`,
+      );
+    }
+
+    if (/human verification/i.test(pageState.title) || /confirm you are human/i.test(pageState.bodyText)) {
+      throw new Error(
+        `IMDb returned a human verification page for ${SOURCE_URL}. Run with a verified browser session or use another data source.`,
+      );
+    }
+
+    if (status === 202 && !pageState.hasNextData) {
+      throw new Error(
+        `IMDb returned HTTP 202 without __NEXT_DATA__ for ${SOURCE_URL}.`,
+      );
+    }
+
+    if (!pageState.hasNextData) {
+      throw new Error(
+        `IMDb page did not include __NEXT_DATA__ for ${SOURCE_URL}. Page title: ${JSON.stringify(pageState.title)}.`,
+      );
+    }
+
     await page.waitForFunction(
       () => {
         const el = document.getElementById('__NEXT_DATA__');
